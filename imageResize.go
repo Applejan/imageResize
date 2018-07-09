@@ -12,6 +12,7 @@ import (
 	"github.com/disintegration/imaging"
 )
 
+//sl functions cut slice to mutil according to the cpus number of your computer.
 func sl(oriSli []os.FileInfo, cpuNum int, toSlice [][]os.FileInfo) {
 	perlen := len(oriSli)/cpuNum + 1
 	for i := 0; i < cpuNum-1; i++ {
@@ -32,11 +33,8 @@ func resize(s []os.FileInfo, c chan int) {
 			outf := imaging.Resize(f, f.Bounds().Dx(), 0, imaging.Lanczos)
 			imaging.Save(outf, v.Name(), imaging.JPEGQuality(80))
 			runtime.Gosched()
-
 		}
-
 	}
-
 	c <- 1
 }
 
@@ -44,7 +42,7 @@ func main() {
 
 	stime := time.Now()
 	if len(os.Args) == 1 {
-		log.Fatal("必须输入一个目录")
+		log.Fatal("Args must be a dir!!")
 	}
 	wd := os.Args[1]
 
@@ -71,6 +69,6 @@ func main() {
 	}
 
 	etime := time.Now()
-	fmt.Println(etime.Sub(stime))
+	fmt.Println("It cost ", etime.Sub(stime))
 	time.Sleep(10 * time.Second)
 }
