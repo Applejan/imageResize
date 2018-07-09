@@ -30,6 +30,8 @@ func resize(s []os.FileInfo, c chan int) {
 			if err != nil {
 				log.Fatalln("Open file fail!", v.Name())
 			}
+			fmt.Println("Now processing ", v.Name(), "........")
+			os.Remove(v.Name())
 			outf := imaging.Resize(f, f.Bounds().Dx(), 0, imaging.Lanczos)
 			imaging.Save(outf, v.Name(), imaging.JPEGQuality(80))
 			runtime.Gosched()
