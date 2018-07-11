@@ -2,7 +2,6 @@ type sum struct {
 sum int
 }
 
-var a *sum
 
 func resize (src string,status chan int){
 f,err:=imaging.Open(src)
@@ -18,8 +17,9 @@ status<-1
 
 fun main (){
 //Init start flag
+  cpus:=4
   status:=make(chan int, cpus)
-  for i:=0,i<cpus,i++{
+  for i:=0;i<cpus;i++{
     status<-1
   }
   //To get filw list
