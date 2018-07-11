@@ -11,10 +11,6 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-type sum struct {
-	sum int
-}
-
 func resize(src string, status chan int) {
 	if strings.HasSuffix(src, ".jpg") || strings.HasSuffix(src, ".JPG") {
 		f, err := imaging.Open(src)
@@ -29,9 +25,8 @@ func resize(src string, status chan int) {
 	}
 }
 
-func distribut(file string, id *sum, status chan int) {
+func distribut(file string, status chan int) {
 	<-status
-	id.sum++
 	fmt.Println("Current file ID is ", id.sum)
 	go resize(file, status)
 }
@@ -54,9 +49,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	a := &sum{0}
 	for _, v := range files {
-		distribut(v.Name(), a, status)
+		distribut(v.Name(), status)
 	}
 
 }
