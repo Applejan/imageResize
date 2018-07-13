@@ -7,70 +7,50 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/disintegration/imaging"
 )
 
-//sl functions cut slice to mutil according to the cpus number of your computer.
-func sl(oriSli []os.FileInfo, cpuNum int, toSlice [][]os.FileInfo) {
-	perlen := len(oriSli)/cpuNum + 1
-	for i := 0; i < cpuNum-1; i++ {
-
-		toSlice[i] = oriSli[i*perlen : (i+1)*perlen]
+func resize(src string, status chan int) {
+	if strings.HasSuffix(src, ".jpg") || strings.HasSuffix(src, ".JPG") {
+		f, err := imaging.Open(src)
+		if err != nil {
+			log.Fatalln("Open file fail! ", src)
+		}
+		fmt.Println("Now processing ", src, "........")
+		os.Remove(src)
+		outf := imaging.Resize(f, f.Bounds().Dx(), 0, imaging.Lanczos)
+		imaging.Save(outf, src, imaging.JPEGQuality(80))
+		status <- 1
 	}
-	toSlice[cpuNum-1] = oriSli[(cpuNum-1)*perlen:]
-
 }
 
-func resize(s []os.FileInfo, c chan int) {
-	for _, v := range s {
-		if strings.HasSuffix(v.Name(), ".jpg") || strings.HasSuffix(v.Name(), ".JPG") {
-			f, err := imaging.Open(v.Name())
-			if err != nil {
-				log.Fatalln("Open file fail!", v.Name())
-			}
-			fmt.Println("Now processing ", v.Name(), "........")
-			os.Remove(v.Name())
-			outf := imaging.Resize(f, f.Bounds().Dx(), 0, imaging.Lanczos)
-			imaging.Save(outf, v.Name(), imaging.JPEGQuality(80))
-			runtime.Gosched()
-		}
-	}
-	c <- 1
+func distribut(file string, status chan int) {
+	<-status
+	fmt.Println("Current file ID is ", id.sum)
+	go resize(file, status)
 }
 
 func main() {
+	//Init start flag
+	cpus := runtime.NumCPU()
+	runtime.GOMAXPROCS(cpus)
 
-	stime := time.Now()
-	if len(os.Args) == 1 {
-		log.Fatal("Args must be a dir!!")
+	status := make(chan int, cpus)
+	for i := 0; i < cpus; i++ {
+		status <- 1
 	}
-	wd := os.Args[1]
 
-	err := os.Chdir(wd)
+	err := os.Chdir(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
-	dirs, err := ioutil.ReadDir(wd)
+	files, err := ioutil.ReadDir(os.Args[1])
 	if err != nil {
-		log.Fatalln("Dirs get fail!", wd)
+		log.Fatal(err)
 	}
-	fmt.Println("Total file num is ", len(dirs))
-	fmt.Println("Now starts resizing!")
-	cpuNum := runtime.NumCPU()
-	oriSli := dirs
-	c := make(chan int, 2)
-	toSlice := make([][]os.FileInfo, cpuNum)
-	sl(oriSli, cpuNum, toSlice)
-	for i := 0; i < cpuNum; i++ {
-		go resize(toSlice[i], c)
-	}
-	for k := 0; k < cpuNum; k++ {
-		<-c
+	for _, v := range files {
+		distribut(v.Name(), status)
 	}
 
-	etime := time.Now()
-	fmt.Println("It cost ", etime.Sub(stime))
-	time.Sleep(10 * time.Second)
 }
