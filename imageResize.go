@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/disintegration/imaging"
 )
@@ -15,19 +16,25 @@ func resize(src string, status chan int) {
 	if strings.HasSuffix(src, ".jpg") || strings.HasSuffix(src, ".JPG") {
 		f, err := imaging.Open(src)
 		if err != nil {
-			log.Fatalln("Open file fail! ", src)
+			log.Println("Open file fail! ", src)
+			return
 		}
-		fmt.Println("Now processing ", src, "........")
+		fSize1, _ := os.Stat(src)
+		width := f.Bounds().Dx()
+		if width > 4000 {
+			width = 4000
+		}
+		outf := imaging.Resize(f, width, 0, imaging.Lanczos)
 		os.Remove(src)
-		outf := imaging.Resize(f, f.Bounds().Dx(), 0, imaging.Lanczos)
 		imaging.Save(outf, src, imaging.JPEGQuality(80))
+		fSize2, _ := os.Stat(src)
+		fmt.Printf("%v\t Before: %vKb\tAfter %vKb.\n", src, fSize1.Size()/(2<<10), fSize2.Size()/(2<<10))
 		status <- 1
 	}
 }
 
 func distribut(file string, status chan int) {
 	<-status
-	fmt.Println("Current file ID is ", id.sum)
 	go resize(file, status)
 }
 
@@ -35,7 +42,7 @@ func main() {
 	//Init start flag
 	cpus := runtime.NumCPU()
 	runtime.GOMAXPROCS(cpus)
-
+	fmt.Printf("Now start Processing...The number of CPU is %v", cpus)
 	status := make(chan int, cpus)
 	for i := 0; i < cpus; i++ {
 		status <- 1
@@ -52,5 +59,6 @@ func main() {
 	for _, v := range files {
 		distribut(v.Name(), status)
 	}
-
+	time.Sleep(10 * time.Second)
+	fmt.Println("Done!")
 }
