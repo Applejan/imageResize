@@ -7,7 +7,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/disintegration/imaging"
 )
@@ -28,7 +27,7 @@ func resize(src string, status chan int) {
 		os.Remove(src)
 		imaging.Save(outf, src, imaging.JPEGQuality(80))
 		fSize2, _ := os.Stat(src)
-		fmt.Printf("%v\t Before: %vKb\tAfter %vKb.\n", src, fSize1.Size()/(2<<10), fSize2.Size()/(2<<10))
+		fmt.Printf("%v\t Before: %vKb\t After: %vKb.\n", src, fSize1.Size()/(1<<10), fSize2.Size()/(1<<10))
 		status <- 1
 	}
 }
@@ -42,7 +41,7 @@ func main() {
 	//Init start flag
 	cpus := runtime.NumCPU()
 	runtime.GOMAXPROCS(cpus)
-	fmt.Printf("Now start Processing...The number of CPU is %v", cpus)
+	fmt.Printf("Now start Processing...The number of CPU is %v\n", cpus)
 	status := make(chan int, cpus)
 	for i := 0; i < cpus; i++ {
 		status <- 1
@@ -59,6 +58,5 @@ func main() {
 	for _, v := range files {
 		distribut(v.Name(), status)
 	}
-	time.Sleep(10 * time.Second)
 	fmt.Println("Done!")
 }
